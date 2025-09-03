@@ -1,0 +1,165 @@
+# セットアップ手順書
+
+## 前提条件
+
+### 必要なソフトウェア
+- **Docker**: バージョン 20.10 以上
+- **Docker Compose**: バージョン 2.0 以上（または docker-compose v1.29以上）
+- **Git**: ソースコード取得用
+
+### 動作確認済み環境
+- Windows 10/11 + Docker Desktop
+- macOS + Docker Desktop  
+- Linux (Ubuntu 20.04+, CentOS 8+) + Docker Engine
+
+### システム要件
+- メモリ: 最低2GB（推奨4GB以上）
+- ディスク容量: 最低1GB（イメージ・データ保存用）
+
+## セットアップ手順
+
+### STEP 1: 前提条件の確認
+
+#### Docker・Docker Composeのインストール確認
+```bash
+# Dockerバージョン確認
+docker --version
+# 出力例: Docker version 20.10.x, build xxxxx
+
+# Docker Composeバージョン確認
+docker compose version
+# 出力例: Docker Compose version v2.x.x
+
+# または旧バージョンの場合
+docker-compose --version
+```
+
+#### Docker動作確認
+```bash
+# Dockerサービスの起動確認
+docker ps
+
+```
+
+### STEP 2: プロジェクトファイルの準備
+
+#### ソースコードの取得
+```bash
+# リポジトリをクローン
+git clone <リポジトリURL>
+cd <プロジェクトディレクトリ名>
+
+```
+
+#### ファイル構成の確認
+```bash
+#画像用のフォルダーを作成する
+mkdir upload
+cd upload
+mkdir image
+#親ディレクトリに戻る
+cd ..
+
+# 以下のファイルが存在することを確認
+ls -la
+# Dockerfile
+# compose.yml  
+# nginx/conf.d/default.conf
+# public/keijiban.php
+# upload/image
+```
+
+### STEP 3: Dockerコンテナの起動
+
+#### 初回起動（ビルド含む）
+```bash
+# バックグラウンドでコンテナ起動・ビルド
+docker compose up -d --build
+S
+```
+
+
+### STEP 4: データベースの初期設定
+
+#### MySQLコンテナへの接続
+```bash
+# MySQLコンテナにログイン
+docker exec -it mysql2 mysql -u root database
+```
+
+#### テーブル作成
+```sql
+-- bbs_entriesテーブルの作成
+CREATE TABLE bbs_entries (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    body TEXT NOT NULL,
+    image_filename VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+#### テーブル作成確認
+```sql
+-- テーブル一覧確認
+SHOW TABLES;
+
+-- テーブル構造確認
+DESC bbs_entries;
+
+-- MySQLから退出
+EXIT;
+```
+
+#### 期待される出力例
+```sql
+mysql> DESC bbs_entries;
++----------------+--------------+------+-----+-------------------+-------------------+
+| Field          | Type         | Null | Key | Default           | Extra             |
++----------------+--------------+------+-----+-------------------+-------------------+
+| id             | int          | NO   | PRI | NULL              | auto_increment    |
+| body           | text         | NO   |     | NULL              |                   |
+| image_filename | varchar(255) | YES  |     | NULL              |                   |
+| created_at     | timestamp    | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++----------------+--------------+------+-----+-------------------+-------------------+
+```
+
+### STEP 5: 動作確認
+
+#### Webアプリケーションへのアクセス
+1. ブラウザで以下のURLにアクセス
+   ```
+   http://インスタンスのパブリックIP/keijiban.php
+   ```
+
+2. 掲示板ページが表示されることを確認
+   - テキストエリア（投稿用）
+   - ファイル選択ボタン（画像アップロード用）
+   - 送信ボタン
+
+#### 投稿テスト
+1. **テキスト投稿のテスト**
+   ```
+   テキストエリアに「テスト投稿です」と入力
+   → 送信ボタンをクリック
+   → ページがリロードされ、投稿が表示される
+   ```
+
+2. **画像付き投稿のテスト**
+   ```
+   テキストエリアに内容を入力
+   → 画像ファイル（5MB以下のJPEG、PNGなど）を選択
+   → 送信ボタンをクリック
+   → 投稿と画像が表示される
+   ```
+
+
+## セットアップ完了チェックリスト
+
+- [ ] Docker・Docker Compose が正常にインストールされている
+- [ ] プロジェクトファイルが正しく配置されている
+- [ ] `docker compose up -d --build` が成功している
+- [ ] 3つのコンテナ（web, php, mysql）が起動している
+- [ ] MySQLにbbs_entriesテーブルが作成されている
+- [ ] http://localhost で掲示板ページが表示される
+- [ ] テキスト投稿が正常に動作する
+- [ ] 画像アップロードが正常に動作する
